@@ -14,8 +14,8 @@ A short checklist for keeping the project healthy and safe over time.
 
 1. Update `version` in `package.json` and add a section to `CHANGELOG.md`.
 2. Commit to `main` and wait for CI to pass.
-3. Tag and push: `git tag v0.14.24` then `git push origin v0.14.24`.
-4. The **Publish image** workflow builds for amd64 and arm64 and publishes `0.14.24`, `0.14` and `latest`.
+3. Tag and push: `git tag v0.14.25` then `git push origin v0.14.25`.
+4. The **Publish image** workflow builds for amd64 and arm64 and publishes `0.14.25`, `0.14` and `latest`.
 5. On GitHub, create a **Release** from the tag and paste the changelog notes. Mention anything that needs action from users.
 
 ## Keeping it secure

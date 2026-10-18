@@ -421,6 +421,9 @@ main.sx #m .panel{max-width:760px!important}
 .opt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:14px 16px;border-radius:18px;background:var(--s2);border:2px solid transparent;height:auto}
 .opt b{font-size:15.5px}.opt span{font-weight:400;color:var(--text);opacity:.85;font-size:14px;line-height:1.45}.opt small{font-weight:400;color:var(--mute);font-size:13px;line-height:1.4}
 .opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--s2))}
+.pgv{max-width:980px}
+.pgv .dlg{max-height:none!important;overflow:visible!important;width:100%!important;max-width:none!important;border-radius:20px!important;animation:none}
+.pgv .dlg::before{display:none!important}
 </style></head><body>
 <div id="app"></div><div id="toasts" aria-live="polite"></div>
 <link rel="stylesheet" href="/statuskit.css"><link rel="stylesheet" href="/cinema.css"><script src="/statuskit.js"></script><script src="/scenes.js"></script><script src="/cinema.js"></script><script src="/qr.js"></script>
@@ -682,7 +685,7 @@ const Route={busy:false,first:true,item:null,pending:null,pushed:false,
     if(tab==='set'&&m[2])stSub=m[2];
     if(tab==='lib'&&m[2]){libSel=m[2];if(m[3])Route.pending=+m[3]}
     return true},
-  enter(sid,id){if(tab!=='lib')return;Route.item=id;libSel=sid;Route.sync();
+  enter(sid,id,page){if(tab!=='lib')return;Route.item=id;libSel=sid;Route.sync();if(page)return;
     const ov=[...document.querySelectorAll('.ov')].pop();if(!ov)return;
     const mo=new MutationObserver(()=>{if(!ov.isConnected){mo.disconnect();Route.leave()}});mo.observe(document.body,{childList:true})},
   leave(){if(!Route.item)return;Route.item=null;
@@ -1624,15 +1627,25 @@ async function statsView(){
 const libMeta=(x,tv)=>[fmt(x.size)+' on disk',x.missing?(tv?x.missing+' episodes missing':'file missing'):'',x.profile,LSTAT[x.status],(x.genres||[]).join(', '),x.maker,x.rating?'rating '+x.rating.toFixed(1):''].filter(Boolean).join(', ');
 function openLibItem(s,x,cb){
   cb=cb||{};
-  setTimeout(()=>Route.enter(s.id,x.id),0);
-  if(s.type==='sonarr')return seriesDialog(s,x,cb);
+  const page=tab==='lib';
+  if(page){cb={};Route.enter(s.id,x.id,true);PG.on=true;window.scrollTo(0,0)}else setTimeout(()=>Route.enter(s.id,x.id),0);
+  try{ if(s.type==='sonarr')return seriesDialog(s,x,cb);
   showDetail({title:x.title,sub:String(x.year||''),poster:x.poster,fanart:x.fanart,overview:x.overview,meta:libMeta(x,false),sid:s.id,id:x.id,cal:{sid:s.id,kind:'m',id:x.id},scope:'',del:me.role==='admin',onremove:cb.onRemove,
     mon:{sid:s.id,kind:'movie',id:x.id,monitored:x.monitored,onChange:v=>{x.monitored=v;if(cb.onChange)cb.onChange()}}});
+  }finally{PG.on=false}
 }
+// A show or movie opened from the Library is a page of its own (not a pop-up): same content, its own address, a Back button.
+const PG={on:false};
+function pageClose(){
+  if(Route.pushed){history.back();return}
+  Route.item=null;Route.pending=null;history.replaceState(null,'',Route.hash());render()}
+function pageHost(html){
+  const m=$('#m');m.innerHTML=`<div class="pgv"><div class="row" style="margin-bottom:12px"><button id="pgb" class="ghost">&larr; Back to library</button></div><div class="dlg" role="region" style="display:block">${html}</div></div>`;
+  const o=m.firstElementChild;o.close=pageClose;o.querySelector('#pgb').onclick=pageClose;return o}
 async function seriesDialog(s,x,cb){
   const admin=me.role==='admin',canAdd=can('add'),z2=n=>String(n).padStart(2,'0');
-  const o=modal(`<div class="row"><h2 style="margin:0;flex:1;word-break:break-word">${esc(x.title)}</h2><button data-x>Close</button></div><div id="sd" style="margin-top:12px">${skel(4)}</div>`);
-  o.querySelector('.dlg').style.maxWidth='920px';o.querySelector('[data-x]').onclick=o.close;
+  const o=(PG.on?pageHost:modal)(`<div class="row"><h2 style="margin:0;flex:1;word-break:break-word">${esc(x.title)}</h2><button data-x>Close</button></div><div id="sd" style="margin-top:12px">${skel(4)}</div>`);
+  if(!PG.on)o.querySelector('.dlg').style.maxWidth='920px';o.querySelector('[data-x]').onclick=o.close;
   let d;try{d=await api(`/api/series/${s.id}/${x.id}`)}catch(e){o.querySelector('#sd').innerHTML=`<div class="err">${esc(e.message)}</div>`;return}
   const nums=[...new Set([...d.seasons.map(q=>q.n),...d.episodes.map(q=>q.season)])].sort((a,b)=>(a===0)-(b===0)||b-a);
   const open=new Set(nums.filter(n=>n>0).slice(0,1));
@@ -1694,8 +1707,8 @@ async function calLink(c,btn){ // an address that adds just this show or movie t
   }catch(e){toast(e.message,'bad')}
   if(btn)btn.disabled=false}
 function showDetail(x){
-  const o=document.createElement('div');o.className='ov';
-  o.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-label="${esc(x.title)}">${x.fanart?'<div class="dbd"></div>':''}${x.poster?`<img src="${esc(x.poster)}" alt="" style="width:160px;border-radius:8px;align-self:flex-start">`:''}
+  const pg=PG.on,o=document.createElement('div');o.className=pg?'pgv':'ov';
+  o.innerHTML=`${pg?'<div class="row" style="margin-bottom:12px"><button id="pgb" class="ghost">&larr; Back to library</button></div>':''}<div class="dlg" role="${pg?'region':'dialog'}" ${pg?'':'aria-modal="true" '}aria-label="${esc(x.title)}">${x.fanart?'<div class="dbd"></div>':''}${x.poster?`<img src="${esc(x.poster)}" alt="" style="width:160px;border-radius:8px;align-self:flex-start">`:''}
     <div style="flex:1;min-width:220px"><h2 style="margin:0">${esc(x.title)}</h2>
     <div class="mute">${esc(x.sub||'')}${x.date?' · '+new Date(x.date).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'}):''}</div>
     ${x.meta?`<div class="mute">${esc(x.meta)}</div>`:''}
@@ -1703,9 +1716,9 @@ function showDetail(x){
     <p>${esc(x.overview||'No description available yet.')}</p>${x.mon?`<label class="tgl" style="margin:4px 0 10px"><input type="checkbox" id="mon" ${x.mon.monitored?'checked':''} ${can('add')?'':'disabled'}><span>Monitored</span></label>`:''}${x.about?`<h3>About the series</h3><p class="mute">${esc(x.about)}</p>`:''}
     <div class="row">${x.sid&&x.id&&can('add')?`<button id="au">${x.scope==='series'?'Search missing episodes':'Auto search'}</button>${x.scope==='series'?'':'<button id="in">Interactive search</button>'}`:''}${x.cal?'<button id="cal">Calendar link</button>':''}${x.del?'<button id="rm">Remove</button>':''}<button class="primary" id="cl">Close</button></div>
     <div class="mute" id="st" role="status" style="margin-top:8px"></div></div><div id="rl" style="flex-basis:100%"></div></div>`;
-  const k=e=>{if(e.key==='Escape')close()},close=()=>{o.remove();document.removeEventListener('keydown',k)};
-  document.addEventListener('keydown',k);o.onclick=e=>{if(e.target===o)close()};
-  document.body.append(o);const q=s=>o.querySelector(s),st=q('#st');q('#cl').onclick=close;q('#cl').focus();if(x.cal)q('#cal').onclick=e=>calLink(x.cal,e.target);
+  const k=e=>{if(e.key==='Escape')close()},close=pg?pageClose:()=>{o.remove();document.removeEventListener('keydown',k)};
+  if(pg){$('#m').innerHTML='';$('#m').append(o);o.querySelector('#pgb').onclick=pageClose}else{document.addEventListener('keydown',k);o.onclick=e=>{if(e.target===o)close()};document.body.append(o)}
+  const q=s=>o.querySelector(s),st=q('#st');q('#cl').onclick=close;if(!pg)q('#cl').focus();if(x.cal)q('#cal').onclick=e=>calLink(x.cal,e.target);
   if(x.fanart&&q('.dbd'))q('.dbd').style.backgroundImage='url("'+String(x.fanart).replace(/"/g,'%22')+'")';
   if(q('#fs'))api(`/api/filestatus?sid=${encodeURIComponent(x.sid)}&id=${x.id}`).then(f=>{const b=q('#fs');if(!b)return;
     if(f.have){const fl=f.file||{};b.innerHTML=`<span class="pill ok">File available</span>${fl.quality?`<span class="pill">${esc(fl.quality)}</span>`:''}${fl.codec?`<span class="pill">${esc(fl.codec)}</span>`:''}${(fl.langs||[]).length?`<span class="pill">${esc(fl.langs.join(', '))}</span>`:''}${fl.size?`<span class="pill">${fmt(fl.size)}</span>`:''}${fl.name?`<div class="mute" style="flex-basis:100%;overflow-wrap:anywhere;font-size:12.5px">${esc(fl.name)}</div>`:''}`}

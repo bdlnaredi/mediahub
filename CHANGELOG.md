@@ -2,6 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.14.24] - 2026-10-18
+
+### Changed
+- **Shows and movies are pages now, not pop-ups.** Opening a title from the Library shows it as a page of its own, with a Back to library button, its own address and the same details as before (seasons and episodes, files, monitoring, search, calendar link). Back, reload and shared links land on the title. Titles opened from the Dashboard still open as pop-ups.
+
 ## [0.14.23] - 2026-10-18
 
 ### Added
