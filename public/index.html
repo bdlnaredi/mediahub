@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MediaHub</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0e131d"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
@@ -424,6 +424,37 @@ main.sx #m .panel{max-width:760px!important}
 .pgv{max-width:980px}
 .pgv .dlg{max-height:none!important;overflow:visible!important;width:100%!important;max-width:none!important;border-radius:20px!important;animation:none}
 .pgv .dlg::before{display:none!important}
+/* ---- Phone view: compact bars, poster grids that fit the screen, controls that wrap, comfortable touch sizes ---- */
+@media(max-width:860px){
+ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+ body{overscroll-behavior-y:contain}
+ .side .ver{display:none}
+ .side{padding-bottom:8px}.brand .logo{width:34px;height:34px}
+ main{padding:14px 14px calc(104px + env(safe-area-inset-bottom))}
+ .demo{font-size:12.5px;padding:6px 10px;margin-bottom:10px}
+ .ph{margin-bottom:12px}.ph h1{font-size:26px;line-height:1.1}.ph p{font-size:13.5px;margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .gh{font-size:25px!important;line-height:1.15}
+ input,select,textarea{font-size:16px}
+ #m .row>input:not([type=checkbox]):not([type=radio]),#m .row>select{min-width:0;flex:1 1 130px}
+ #m .row>button{flex:none}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ #g .grid,#g.grid,#dg .grid,#g>.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ .card{padding:6px;border-radius:16px}.card h3{font-size:12.5px;margin:6px 2px 0;line-height:1.25}
+ .card .mute{font-size:11.5px}
+ .card img{border-radius:10px}
+ .pc{width:108px}.pc b{font-size:12.5px}
+ .strip{gap:10px;margin:0 -14px;padding:0 14px 6px}
+ .panel{padding:14px;border-radius:18px}
+ .tabs,.seg{max-width:100%}.seg{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}.seg button{white-space:nowrap}
+ .sxn{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+ .pgv .dlg{padding:16px!important;border-radius:20px!important}
+ .pgv h2{font-size:21px}
+ table{display:block;overflow-x:auto;max-width:100%}
+ .dlg h2{font-size:20px}
+ .row>.grow:has(>.gh){flex:1 1 100%}
+ form input{min-width:0}
+}
+@media(max-width:380px){#g .grid,#g.grid,#dg .grid,#g>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head><body>
 <div id="app"></div><div id="toasts" aria-live="polite"></div>
 <link rel="stylesheet" href="/statuskit.css"><link rel="stylesheet" href="/cinema.css"><script src="/statuskit.js"></script><script src="/scenes.js"></script><script src="/cinema.js"></script><script src="/qr.js"></script>

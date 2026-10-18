@@ -2,6 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.14.25] - 2026-10-18
+
+### Changed
+- **A proper phone view.** On phones (and in the Android app) the top bar is slimmer, pages start higher, and posters in the Library, Discover and Upcoming show 3 or 2 across instead of one giant poster per row. Search boxes and buttons wrap and fit the screen, the greeting stays on one line, text boxes no longer make the page zoom, and the settings and tab strips fade at the edge to show they scroll. Checked at 390 px wide on every main page.
+
 ## [0.14.24] - 2026-10-18
 
 ### Changed
