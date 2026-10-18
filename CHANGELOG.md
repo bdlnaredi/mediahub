@@ -2,6 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.14.23] - 2026-10-18
+
+### Added
+- **Every page has its own address.** Each tab, each Settings section, each library app (Sonarr, Radarr) and each show or movie opens at its own link, such as `#/lib/<app>/<title>`. The browser's Back and Forward buttons and reload now stay on the page you were on, and you can share or bookmark a link. In the Library, the app picker is now a button for each app. Titles still open over the list, with their own address; Back closes them.
+
 ## [0.14.22] - 2026-10-18
 
 ### Added

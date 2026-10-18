@@ -519,7 +519,7 @@ async function start(){
   const rt=(location.hash.match(/^#reset=([\w-]{20,80})$/)||[])[1];
   if(rt)return resetView(rt);
   if(!s.user)return authView(s.setup,s.setupCode);
-  DEMO=!!s.demo;me=s.user;await load();render();if(me.role==='admin')api('/api/update').then(u=>{UPD=u;verNote();if(tab==='set'&&stSub==='about')stAbout()}).catch(()=>{});
+  DEMO=!!s.demo;me=s.user;await load();Route.parse();render();if(me.role==='admin')api('/api/update').then(u=>{UPD=u;verNote();if(tab==='set'&&stSub==='about')stAbout()}).catch(()=>{});
 }
 async function load(){
   services=await api('/api/services');
@@ -671,14 +671,36 @@ const TYPE_TABS={find:['sonarr','radarr'],rq:['seerr'],lib:['sonarr','radarr'],w
 const PICK={sub:'bazarr',nzb:'sabnzbd',dl:'qbittorrent',rss:'qbittorrent',idx:'jackett',ur:'unraid',rq:'seerr',stats:'tautulli'};
 const visibleTabs=()=>TABS.filter(([k])=>!TYPE_TABS[k]||TYPE_TABS[k].some(t=>ofType(t).length)).filter(([k])=>k!=='disc'||Object.values(me.lists||{}).some(Boolean)).filter(([k])=>k!=='hl'||(me.role==='admin'&&services.some(s=>['sonarr','radarr','lidarr','readarr','prowlarr'].includes(s.type))));
 let stSub='acct';
+// Every page has its own address (#/lib, #/set/users, #/lib/<app>/<title>), so Back, Forward, reload and sharing a link all work.
+const Route={busy:false,first:true,item:null,pending:null,pushed:false,
+  hash(){let h='/'+tab;if(tab==='set'&&stSub&&stSub!=='acct')h+='/'+stSub;if(tab==='lib'&&libSel){h+='/'+libSel;if(Route.item||Route.pending)h+='/'+(Route.item||Route.pending)}return '#'+h},
+  sync(){if(Route.busy)return;const h=Route.hash();if(location.hash===h)return;
+    if(Route.first){history.replaceState(null,'',h);Route.first=false;return}
+    history.pushState(null,'',h);Route.pushed=!!Route.item},
+  parse(){const m=location.hash.match(/^#\/(\w+)(?:\/([\w-]+))?(?:\/(\d+))?$/);if(!m||!TABS.some(t=>t[0]===m[1]))return false;
+    tab=m[1];Route.item=null;
+    if(tab==='set'&&m[2])stSub=m[2];
+    if(tab==='lib'&&m[2]){libSel=m[2];if(m[3])Route.pending=+m[3]}
+    return true},
+  enter(sid,id){if(tab!=='lib')return;Route.item=id;libSel=sid;Route.sync();
+    const ov=[...document.querySelectorAll('.ov')].pop();if(!ov)return;
+    const mo=new MutationObserver(()=>{if(!ov.isConnected){mo.disconnect();Route.leave()}});mo.observe(document.body,{childList:true})},
+  leave(){if(!Route.item)return;Route.item=null;
+    if(Route.pushed&&!Route.busy){Route.pushed=false;history.back()}else if(!Route.busy)history.replaceState(null,'',Route.hash())}};
+window.addEventListener('popstate',()=>{if(!me)return;Route.busy=true;
+  document.querySelectorAll('.ov').forEach(o=>o.remove());
+  Route.item=null;
+  if(Route.parse()){render()}Route.busy=false;Route.pushed=false});
+
 function goto(k){if(String(k).includes(':')){const [t,s]=k.split(':');tab=t==='st'?'set':t;stSub=s}else tab=k;render()}
 function render(){
   queueMicrotask(verNote);
   hideStage();Cinema.ambient();Cinema.tilt();
   const tabs=visibleTabs();if(!tabs.some(t=>t[0]===tab))tab='dash';
+  Route.sync();
   const pg=PAGES[tab]||['',''];
   const dockIds=['dash','dl','lib','rq','find','up','stats'].filter(k=>tabs.some(x=>x[0]===k)).slice(0,4),dockHtml=`<nav class="dock" aria-label="Main">${dockIds.map(k=>`<button data-t="${k}" class="${tab===k?'on':''}"${tab===k?' aria-current="page"':''}>${ic(k)}<span>${(tabs.find(x=>x[0]===k)||[,k])[1]}</span></button>`).join('')}<button id="dm" class="${dockIds.includes(tab)?'':'on'}" aria-haspopup="dialog">${ic('more')}<span>More</span></button></nav>`;
-  $('#app').innerHTML=`<a class="skip" href="#m">Skip to content</a><div class="shell"><nav class="side" aria-label="Main"><div class="brand"><span class="logo">${LOGO}</span><span class="t">MediaHub</span><span class="mtools"><button class="ghost" id="qs2" aria-label="Quick search">${ic('find')}</button><button class="ghost" id="ap3" aria-label="Appearance">${ic('pal')}</button></span><button class="ghost" id="rl" aria-label="Shrink or expand the menu" title="Shrink or expand the menu">${ic('chev')}</button></div>
+  $('#app').innerHTML=`<a class="skip" href="#m" onclick="event.preventDefault();var m=document.getElementById('m');m.setAttribute('tabindex','-1');m.focus()">Skip to content</a><div class="shell"><nav class="side" aria-label="Main"><div class="brand"><span class="logo">${LOGO}</span><span class="t">MediaHub</span><span class="mtools"><button class="ghost" id="qs2" aria-label="Quick search">${ic('find')}</button><button class="ghost" id="ap3" aria-label="Appearance">${ic('pal')}</button></span><button class="ghost" id="rl" aria-label="Shrink or expand the menu" title="Shrink or expand the menu">${ic('chev')}</button></div>
     <button class="qs" id="qs" aria-label="Quick search">${ic('find')}<span>Quick search</span><kbd>Ctrl K</kbd></button>
     <div class="nav">${tabs.map(([k,n])=>`<button class="nv ${tab===k?'on':''}" data-t="${k}" title="${n}"${tab===k?' aria-current="page"':''}>${ic(k)}<span>${n}</span></button>`).join('')}</div>
     <div class="who"><span class="av">${esc((me.name[0]||'?').toUpperCase())}</span><span class="nm">${esc(me.name)}</span><button class="ghost" id="ap" aria-label="Appearance" title="Appearance">${ic('pal')}</button><button id="out" class="ghost" aria-label="Sign out" title="Sign out">${ic('out')}</button></div><div class="ver" title="MediaHub version, see Settings, About">MediaHub ${esc(VER)}${APPMODE?' · Android app':''}</div></nav>
@@ -1602,6 +1624,7 @@ async function statsView(){
 const libMeta=(x,tv)=>[fmt(x.size)+' on disk',x.missing?(tv?x.missing+' episodes missing':'file missing'):'',x.profile,LSTAT[x.status],(x.genres||[]).join(', '),x.maker,x.rating?'rating '+x.rating.toFixed(1):''].filter(Boolean).join(', ');
 function openLibItem(s,x,cb){
   cb=cb||{};
+  setTimeout(()=>Route.enter(s.id,x.id),0);
   if(s.type==='sonarr')return seriesDialog(s,x,cb);
   showDetail({title:x.title,sub:String(x.year||''),poster:x.poster,fanart:x.fanart,overview:x.overview,meta:libMeta(x,false),sid:s.id,id:x.id,cal:{sid:s.id,kind:'m',id:x.id},scope:'',del:me.role==='admin',onremove:cb.onRemove,
     mon:{sid:s.id,kind:'movie',id:x.id,monitored:x.monitored,onChange:v=>{x.monitored=v;if(cb.onChange)cb.onChange()}}});
@@ -2085,9 +2108,10 @@ function libView(){
   const opts=services.filter(s=>['sonarr','radarr'].includes(s.type));
   if(!opts.length)return noSvc('Sonarr or Radarr');
   if(!opts.some(s=>s.id===libSel))libSel=opts[0].id;
+  Route.sync();
   const admin=me.role==='admin',tv=()=>opts.find(s=>s.id===libSel).type==='sonarr';
   if(LB.sort==='next'&&!tv()){LB.sort='title';LB.dir=1}
-  $('#m').innerHTML=`<div class="row" style="margin-bottom:10px"><select id="sv" aria-label="App">${opts.map(s=>`<option value="${s.id}" ${s.id===libSel?'selected':''}>${esc(s.name)}</option>`).join('')}</select>
+  $('#m').innerHTML=`<div class="row" style="margin-bottom:10px">${opts.length>1?`<div class="seg" id="sv" role="group" aria-label="Library">${opts.map(s=>`<button data-v="${s.id}" class="${s.id===libSel?'on':''}" aria-pressed="${s.id===libSel}">${esc(s.name)}</button>`).join('')}</div>`:''}
     <input id="lq" type="search" placeholder="Search title, genre or ${tv()?'network':'studio'}" aria-label="Search the library" value="${esc(LB.q)}" style="flex:1;min-width:150px">
     <select id="sb" aria-label="Sort by">${Object.entries(LSORT).filter(([k])=>k!=='next'||tv()).map(([k,v])=>`<option value="${k}" ${k===LB.sort?'selected':''}>${v[0]}</option>`).join('')}</select>
     <button class="icon" id="sd" title="Change sort direction"></button>
@@ -2156,7 +2180,7 @@ function libView(){
   if($('#pk'))$('#pk').onclick=async()=>{libPick=!libPick;libTicked.clear();$('#pk').setAttribute('aria-pressed',String(libPick));$('#pk').classList.toggle('primary',libPick);$('#pk').textContent=libPick?'Done selecting':'Select';
     if(libPick&&!libProf.length)try{libProf=await api('/api/profiles?sid='+libSel)}catch{}paint()};
   const readFilters=()=>{const v=i=>$(i)?$(i).value:'';LB.show=v('#f-show')||'all';LB.status=v('#f-status');LB.profile=v('#f-profile');LB.genre=v('#f-genre');LB.maker=v('#f-maker');LB.yf=v('#f-yf');LB.yt=v('#f-yt');LB.rmin=v('#f-rmin');libShown=120;paint()};
-  const load=async()=>{try{libData=await api('/api/library?sid='+libSel);if(tab!=='lib')return;libTicked=new Set([...libTicked].filter(i=>libData.some(x=>x.id===i)));libShown=120;buildFilters();paint()}catch(x){$('#e').textContent=x.message;$('#g').innerHTML=''}};
+  const load=async()=>{try{libData=await api('/api/library?sid='+libSel);if(tab!=='lib')return;libTicked=new Set([...libTicked].filter(i=>libData.some(x=>x.id===i)));libShown=120;buildFilters();paint();if(Route.pending){const pid=Route.pending;Route.pending=null;const it=libData.find(z=>z.id===pid);if(it){Route.item=pid;openLibItem(opts.find(z=>z.id===libSel),it,{onChange:paint,onRemove:load})}}}catch(x){$('#e').textContent=x.message;$('#g').innerHTML=''}};
   $('#fg').oninput=readFilters;$('#fg').onchange=readFilters;
   $('#lq').oninput=e=>{LB.q=e.target.value;libShown=120;paint()};
   $('#sb').onchange=e=>{LB.sort=e.target.value;LB.dir=LSORT[LB.sort][1];libShown=120;paint()};
@@ -2165,7 +2189,7 @@ function libView(){
   $('#vw').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;LB.view=b.dataset.v;paint()};
   $('#fr').onclick=()=>{Object.assign(LB,{show:'all',status:'',profile:'',genre:'',maker:'',yf:'',yt:'',rmin:''});buildFilters();paint()};
   $('#ch').onclick=e=>{const a=e.target.closest('[data-x]');if(!a)return;e.preventDefault();const k=a.dataset.x;LB[k]=k==='show'?'all':'';buildFilters();paint()};
-  $('#sv').onchange=e=>{libSel=e.target.value;libProf=[];Object.assign(LB,{q:'',show:'all',status:'',profile:'',genre:'',maker:'',yf:'',yt:'',rmin:''});libView()};
+  if($('#sv'))$('#sv').onclick=e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===libSel)return;libSel=b.dataset.v;Route.item=null;libProf=[];Object.assign(LB,{q:'',show:'all',status:'',profile:'',genre:'',maker:'',yf:'',yt:'',rmin:''});libView()};
   load();
 }
 const CH_NAMES={ntfy:'ntfy',discord:'Discord',telegram:'Telegram',pushover:'Pushover',gotify:'Gotify',webhook:'Webhook',email:'Email'};
