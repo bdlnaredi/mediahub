@@ -429,31 +429,37 @@ async function ext(s, path, opt = {}) {
 // ---- Calendar feed: a private .ics address a phone or Google Calendar can subscribe to.
 const icsEsc = v => String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([,;])/g, '\\$1');
 const icsFold = l => { if (Buffer.byteLength(l) <= 74) return l; const parts = []; let cur = ''; for (const ch of l) { if (Buffer.byteLength(cur + ch) > (parts.length ? 73 : 74)) { parts.push(cur); cur = ch; } else cur += ch; } parts.push(cur); return parts.join('\r\n '); };
-async function calendarIcs(u) {
+const calSig = (u, o) => crypto.createHmac('sha256', u.calKey).update(`${o.sid}:${o.kind}:${o.id}`).digest('hex').slice(0, 32);
+async function calendarIcs(u, only) {
   const z = n => String(n).padStart(2, '0'), day = d => d.toISOString().slice(0, 10), stamp = d => d.toISOString().replace(/[-:]|\.\d{3}/g, '');
-  const from = new Date(Date.now() - 7 * 864e5), to = new Date(Date.now() + 60 * 864e5), ev = [], now = new Date();
-  await Promise.all(db.services.filter(s => svcOk(u, s) && (s.type === 'sonarr' || s.type === 'radarr')).map(async s => {
+  const from = new Date(Date.now() - (only ? 30 : 7) * 864e5), to = new Date(Date.now() + (only ? 365 : 60) * 864e5), ev = [], now = new Date(); let calName = 'MediaHub upcoming';
+  await Promise.all(db.services.filter(s => svcOk(u, s) && (s.type === 'sonarr' || s.type === 'radarr') && (!only || (s.id === only.sid && (only.kind === 's') === (s.type === 'sonarr')))).map(async s => {
     const tv = s.type === 'sonarr';
     try {
-      const c = await ext(s, `/api/v3/calendar?start=${day(from)}&end=${day(to)}${tv ? '&includeSeries=true' : ''}`);
+      let c;
+      if (only && !tv) { const mv = await ext(s, `/api/v3/movie/${only.id}`); calName = (mv.title || 'Movie') + ' (MediaHub)'; c = [mv]; }
+      else c = await ext(s, `/api/v3/calendar?start=${day(from)}&end=${day(to)}${tv ? '&includeSeries=true' : ''}`);
       (Array.isArray(c) ? c : []).forEach(x => {
+        if (only && tv && x.seriesId !== only.id) return;
         const o = tv ? x.series || {} : x;
+        if (only && tv) calName = (o.title || 'Show') + ' (MediaHub)';
         if (tv) {
           const st = new Date(x.airDateUtc); if (!x.airDateUtc || isNaN(st)) return;
           const mins = Math.min(Math.max(+o.runtime || 45, 10), 600);
           ev.push({ uid: `${s.id}-e${x.id}@mediahub`, start: ':' + stamp(st), end: ':' + stamp(new Date(+st + mins * 60000)),
             sum: `${o.title || 'Show'} S${z(x.seasonNumber)}E${z(x.episodeNumber)}`, desc: [x.title, x.overview].filter(Boolean).join('\n\n') });
         } else {
+          const add = (d, label, k) => { const a = d ? new Date(String(d).slice(0, 10) + 'T00:00:00Z') : null; if (!a || isNaN(a)) return;
+            ev.push({ uid: `${s.id}-m${x.id}${k}@mediahub`, start: ';VALUE=DATE:' + day(a).replace(/-/g, ''), end: ';VALUE=DATE:' + day(new Date(+a + 864e5)).replace(/-/g, ''), sum: `${x.title || 'Movie'} (${label})`, desc: x.overview || '' }); };
+          if (only) { add(x.inCinemas, 'in cinemas', 'c'); add(x.digitalRelease, 'digital release', 'd'); add(x.physicalRelease, 'physical release', 'p'); return; }
           const d = [x.digitalRelease, x.physicalRelease, x.inCinemas].filter(v => v && v.slice(0, 10) >= day(from)).sort()[0]; if (!d) return;
-          const a = new Date(d.slice(0, 10) + 'T00:00:00Z'); if (isNaN(a)) return;
-          ev.push({ uid: `${s.id}-m${x.id}@mediahub`, start: ';VALUE=DATE:' + day(a).replace(/-/g, ''), end: ';VALUE=DATE:' + day(new Date(+a + 864e5)).replace(/-/g, ''),
-            sum: `${x.title || 'Movie'} (movie release)`, desc: x.overview || '' });
+          add(d, 'movie release', '');
         }
       });
     } catch { /* one app being down should not empty the whole calendar */ }
   }));
   ev.sort((a, b) => a.start.localeCompare(b.start));
-  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MediaHub//Upcoming//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:MediaHub upcoming', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'];
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MediaHub//Upcoming//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsEsc(calName), 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'];
   ev.forEach(e => L.push('BEGIN:VEVENT', 'UID:' + e.uid, 'DTSTAMP:' + stamp(now), 'DTSTART' + e.start, 'DTEND' + e.end, 'SUMMARY:' + icsEsc(e.sum), ...(e.desc ? ['DESCRIPTION:' + icsEsc(e.desc.slice(0, 800))] : []), 'END:VEVENT'));
   L.push('END:VCALENDAR');
   return L.map(icsFold).join('\r\n') + '\r\n';
@@ -831,6 +837,18 @@ http.createServer(async (req, res) => {
     if (!n || !wpList().includes(n)) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': WPM[n.split('.').pop().toLowerCase()], 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
     return fs.createReadStream(path.join(WPD, n)).pipe(res);
+  }
+  const calt = p.match(/^\/cal\/t\/(\w+)\/(\w+)\/([sm])(\d+)\/([0-9a-f]{32})\.ics$/);
+  if (calt && (m === 'GET' || m === 'HEAD')) {
+    const ip = ipOf(req), fl = failsPub[ip] || { n: 0, t: 0 };
+    if (Date.now() - fl.t > 600000) fl.n = 0;
+    if (fl.n >= 30) return send(res, 429, { error: 'Too many attempts' });
+    const u = db.users.find(x => x.id === calt[1]), only = { sid: calt[2], kind: calt[3], id: +calt[4] };
+    if (!u || !u.calKey || !same(calSig(u, only), calt[5])) { fl.n++; fl.t = Date.now(); failsPub[ip] = fl; return send(res, 404, { error: 'This link is not valid' }); }
+    const ck = 't' + calt[0], c = calCache[ck]; let body;
+    if (c && Date.now() - c.t < 300000) body = c.d; else { body = await calendarIcs(u, only); calCache[ck] = { t: Date.now(), d: body }; }
+    res.writeHead(200, { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=300', 'Content-Disposition': 'inline; filename="mediahub-title.ics"' });
+    return res.end(m === 'HEAD' ? '' : body);
   }
   const calm = p.match(/^\/cal\/([\w-]{20,64})\.ics$/);
   if (calm && (m === 'GET' || m === 'HEAD')) {
@@ -1621,7 +1639,14 @@ http.createServer(async (req, res) => {
       const token = crypto.randomBytes(24).toString('hex'); me.cal = { hash: th(token), at: Date.now() }; save(); audit(me.name, 'Made a calendar link', '');
       return send(res, 200, { token, path: `/cal/${token}.ics`, base: baseUrl() });
     }
-    if (p === '/api/me/calendar' && m === 'DELETE') { if (me.cal) delete calCache[me.cal.hash]; delete me.cal; save(); audit(me.name, 'Removed the calendar link', ''); return send(res, 200, {}); }
+    if (p === '/api/me/calendar/title' && m === 'GET') {
+      const qs = new URL(req.url, 'http://x').searchParams, only = { sid: String(qs.get('sid') || ''), kind: qs.get('kind') === 'm' ? 'm' : 's', id: parseInt(qs.get('id'), 10) };
+      const sv = db.services.find(x => x.id === only.sid);
+      if (!sv || !svcOk(me, sv) || sv.type !== (only.kind === 's' ? 'sonarr' : 'radarr') || !(only.id > 0)) return send(res, 404, { error: 'Not found' });
+      if (!me.calKey) { me.calKey = crypto.randomBytes(24).toString('hex'); save(); }
+      return send(res, 200, { path: `/cal/t/${me.id}/${only.sid}/${only.kind}${only.id}/${calSig(me, only)}.ics`, base: baseUrl() });
+    }
+    if (p === '/api/me/calendar' && m === 'DELETE') { if (me.cal) delete calCache[me.cal.hash]; delete me.cal; delete me.calKey; for (const k of Object.keys(calCache)) if (k[0] === 't' && k.includes('/' + me.id + '/')) delete calCache[k]; save(); audit(me.name, 'Removed the calendar link', ''); return send(res, 200, {}); }
     if (p === '/api/me/notify/test' && m === 'POST') {
       try { if (!(await pushTo(me.notify, 'MediaHub test', 'Phone messages are working.'))) return send(res, 400, { error: 'Save an address first' }); }
       catch (e) { return send(res, 400, { error: e.message }); }
@@ -1673,7 +1698,7 @@ http.createServer(async (req, res) => {
             const d = tv ? x.airDateUtc : [x.digitalRelease, x.physicalRelease, x.inCinemas].filter(v => v && v >= day(from)).sort()[0];
             if (d) {
               const o = tv ? x.series || {} : x, img = (o.images || []).find(i => i.coverType === 'poster') || {};
-              cal.push({ date: d, sid: s.id, id: x.id, title: tv ? o.title : x.title,
+              cal.push({ date: d, sid: s.id, id: x.id, cal: { sid: s.id, kind: tv ? 's' : 'm', id: tv ? x.seriesId : x.id }, title: tv ? o.title : x.title,
                 sub: tv ? `S${z(x.seasonNumber)}E${z(x.episodeNumber)} · ${x.title}` : 'Movie release',
                 poster: img.remoteUrl || o.remotePoster, overview: x.overview || '', about: tv ? o.overview || '' : '' });
             }

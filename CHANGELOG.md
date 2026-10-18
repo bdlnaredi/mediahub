@@ -2,6 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.14.22] - 2026-10-18
+
+### Added
+- **A calendar link for each show and movie.** The Calendar link button in a show's or movie's details (library, Upcoming) gives an address for just that title, to subscribe to in Google Calendar, Apple Calendar or Outlook. Shows list their episodes for the next year; movies list the cinema, digital and physical release dates. Turning the calendar off in Settings, Account stops these links as well.
+
 ## [0.14.21] - 2026-10-18
 
 ### Added

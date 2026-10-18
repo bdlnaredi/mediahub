@@ -1603,7 +1603,7 @@ const libMeta=(x,tv)=>[fmt(x.size)+' on disk',x.missing?(tv?x.missing+' episodes
 function openLibItem(s,x,cb){
   cb=cb||{};
   if(s.type==='sonarr')return seriesDialog(s,x,cb);
-  showDetail({title:x.title,sub:String(x.year||''),poster:x.poster,fanart:x.fanart,overview:x.overview,meta:libMeta(x,false),sid:s.id,id:x.id,scope:'',del:me.role==='admin',onremove:cb.onRemove,
+  showDetail({title:x.title,sub:String(x.year||''),poster:x.poster,fanart:x.fanart,overview:x.overview,meta:libMeta(x,false),sid:s.id,id:x.id,cal:{sid:s.id,kind:'m',id:x.id},scope:'',del:me.role==='admin',onremove:cb.onRemove,
     mon:{sid:s.id,kind:'movie',id:x.id,monitored:x.monitored,onChange:v=>{x.monitored=v;if(cb.onChange)cb.onChange()}}});
 }
 async function seriesDialog(s,x,cb){
@@ -1626,7 +1626,7 @@ async function seriesDialog(s,x,cb){
       <div class="grow" style="min-width:240px"><div class="mute">${esc([x.year,LSTAT[x.status],x.maker,x.profile].filter(Boolean).join(', '))}</div><div class="mute">${have} of ${tot} episodes downloaded${x.size?', '+fmt(x.size):''}</div>${idChips(d.ids)}
       <p style="margin:8px 0">${esc(x.overview||'No description available.')}</p>
       <div class="row" style="gap:12px"><label class="tgl"><input type="checkbox" data-mon ${d.monitored?'checked':''} ${canAdd?'':'disabled'}><span>Monitor this series</span></label>
-      ${canAdd?`<button data-sa="1">Monitor all seasons</button><button data-sa="0">Unmonitor all</button><button data-sx>${ic('find')}Search missing</button>`:''}${admin?'<button class="danger" data-rm>Remove</button>':''}</div></div></div>
+      ${canAdd?`<button data-sa="1">Monitor all seasons</button><button data-sa="0">Unmonitor all</button><button data-sx>${ic('find')}Search missing</button>`:''}<button data-cl>Calendar link</button>${admin?'<button class="danger" data-rm>Remove</button>':''}</div></div></div>
       <h3 style="margin:18px 0 8px">Seasons</h3>${nums.map(n=>{const st=stat(n),se=seas(n),isOpen=open.has(n);
       return `<div class="panel" style="padding:0;margin-bottom:10px;overflow:hidden"><div class="row" data-sh="${n}" style="padding:12px 14px;cursor:pointer;gap:10px"><span class="chev ${isOpen?'o':''}">${ic('chev')}</span><b>${n===0?'Specials':'Season '+n}</b>
         <span class="mute">${st.have}/${st.total} episodes${st.size?', '+fmt(st.size):''}</span><span class="grow"></span>
@@ -1642,6 +1642,7 @@ async function seriesDialog(s,x,cb){
     else if(t.matches('[data-em]')){const id=+t.dataset.em,v=t.checked;t.disabled=true;
       if(await post({kind:'episodes',id:x.id,ids:[id],monitored:v})){const e2=d.episodes.find(q=>q.id===id);if(e2)e2.monitored=v;t.disabled=false}else{t.checked=!v;t.disabled=false}}});
   root.addEventListener('click',async e=>{
+    if(e.target.closest('[data-cl]')){calLink({sid:s.id,kind:'s',id:x.id},e.target.closest('[data-cl]'));return}
     const sh=e.target.closest('[data-sh]');
     if(sh&&!e.target.closest('label,button')){const n=+sh.dataset.sh;open.has(n)?open.delete(n):open.add(n);draw();return}
     const ss=e.target.closest('[data-ss]'),es=e.target.closest('[data-es]'),sa=e.target.closest('[data-sa]'),sx=e.target.closest('[data-sx]'),rm=e.target.closest('[data-rm]');
@@ -1662,6 +1663,13 @@ function idChips(i){if(!i)return '';const L=(n,v,u,t)=>`<a class="pill" href="${
   const tk=i.imdb?'https://trakt.tv/search/imdb/'+i.imdb:i.tmdb?`https://trakt.tv/search/tmdb/${i.tmdb}?id_type=${tv?'show':'movie'}`:'';
   if(tk)o.push(`<a class="pill" href="${esc(tk)}" target="_blank" rel="noopener noreferrer" title="Find it on Trakt (opens in a new tab)">Trakt ${ic('ext')}</a>`);
   return o.length?`<div class="chips" style="margin-top:6px">${o.join('')}</div>`:''}
+async function calLink(c,btn){ // an address that adds just this show or movie to a phone or Google calendar
+  if(btn)btn.disabled=true;
+  try{const r=await api(`/api/me/calendar/title?sid=${encodeURIComponent(c.sid)}&kind=${c.kind}&id=${c.id}`),u=(r.base||location.origin)+r.path;
+    const o=modal(`<h2 style="margin:0 0 6px">Calendar link</h2><p class="mute">Subscribe to this address in Google Calendar, Apple Calendar or Outlook to see dates for this title only. Anyone with the link can see them. Turn it off for all titles in Settings, Account.</p><input readonly value="${esc(u)}" aria-label="Calendar link" onfocus="this.select()"><div class="row" style="margin-top:12px"><button class="primary" data-cp>Copy link</button><button data-x>Close</button></div>`);
+    o.querySelector('[data-x]').onclick=o.close;o.querySelector('[data-cp]').onclick=async()=>{await copyText(u);toast('Copied','ok')}
+  }catch(e){toast(e.message,'bad')}
+  if(btn)btn.disabled=false}
 function showDetail(x){
   const o=document.createElement('div');o.className='ov';
   o.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-label="${esc(x.title)}">${x.fanart?'<div class="dbd"></div>':''}${x.poster?`<img src="${esc(x.poster)}" alt="" style="width:160px;border-radius:8px;align-self:flex-start">`:''}
@@ -1670,11 +1678,11 @@ function showDetail(x){
     ${x.meta?`<div class="mute">${esc(x.meta)}</div>`:''}
     ${x.sid&&x.id&&x.scope!=='series'?'<div id="fs" class="chips" style="margin:8px 0" role="status"></div>':''}
     <p>${esc(x.overview||'No description available yet.')}</p>${x.mon?`<label class="tgl" style="margin:4px 0 10px"><input type="checkbox" id="mon" ${x.mon.monitored?'checked':''} ${can('add')?'':'disabled'}><span>Monitored</span></label>`:''}${x.about?`<h3>About the series</h3><p class="mute">${esc(x.about)}</p>`:''}
-    <div class="row">${x.sid&&x.id&&can('add')?`<button id="au">${x.scope==='series'?'Search missing episodes':'Auto search'}</button>${x.scope==='series'?'':'<button id="in">Interactive search</button>'}`:''}${x.del?'<button id="rm">Remove</button>':''}<button class="primary" id="cl">Close</button></div>
+    <div class="row">${x.sid&&x.id&&can('add')?`<button id="au">${x.scope==='series'?'Search missing episodes':'Auto search'}</button>${x.scope==='series'?'':'<button id="in">Interactive search</button>'}`:''}${x.cal?'<button id="cal">Calendar link</button>':''}${x.del?'<button id="rm">Remove</button>':''}<button class="primary" id="cl">Close</button></div>
     <div class="mute" id="st" role="status" style="margin-top:8px"></div></div><div id="rl" style="flex-basis:100%"></div></div>`;
   const k=e=>{if(e.key==='Escape')close()},close=()=>{o.remove();document.removeEventListener('keydown',k)};
   document.addEventListener('keydown',k);o.onclick=e=>{if(e.target===o)close()};
-  document.body.append(o);const q=s=>o.querySelector(s),st=q('#st');q('#cl').onclick=close;q('#cl').focus();
+  document.body.append(o);const q=s=>o.querySelector(s),st=q('#st');q('#cl').onclick=close;q('#cl').focus();if(x.cal)q('#cal').onclick=e=>calLink(x.cal,e.target);
   if(x.fanart&&q('.dbd'))q('.dbd').style.backgroundImage='url("'+String(x.fanart).replace(/"/g,'%22')+'")';
   if(q('#fs'))api(`/api/filestatus?sid=${encodeURIComponent(x.sid)}&id=${x.id}`).then(f=>{const b=q('#fs');if(!b)return;
     if(f.have){const fl=f.file||{};b.innerHTML=`<span class="pill ok">File available</span>${fl.quality?`<span class="pill">${esc(fl.quality)}</span>`:''}${fl.codec?`<span class="pill">${esc(fl.codec)}</span>`:''}${(fl.langs||[]).length?`<span class="pill">${esc(fl.langs.join(', '))}</span>`:''}${fl.size?`<span class="pill">${fmt(fl.size)}</span>`:''}${fl.name?`<div class="mute" style="flex-basis:100%;overflow-wrap:anywhere;font-size:12.5px">${esc(fl.name)}</div>`:''}`}
