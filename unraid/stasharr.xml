@@ -8,6 +8,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/bdlnaredi/stasharr/issues</Support>
   <Project>https://github.com/bdlnaredi/stasharr</Project>
+  <Requires>experimental software. Back up your data before use. No liability for data loss.</Requires>
   <Overview>[b]Before you install: EARLY-STAGE SOFTWARE: This app is new and may be broken. Updates are frequent and may include breaking changes. Back up your data before installing or updating. Provided "as is" with no warranty; the author accepts no liability for data loss or damage. Use at your own risk.[/b]  Stasharr is a fork of Stash with multi-user logins (roles and tiers with library access), per-user history and ratings, automatic scan and identify of new files (ThePornDB, StashDB and other stash-boxes), and automatic 15 second vertical reels.</Overview>
   <Category>MediaApp:Video MediaServer:Video</Category>
   <WebUI>http://[IP]:[PORT:2704]/</WebUI>
