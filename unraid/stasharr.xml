@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>stasharr</Name>
+  <Repository>ghcr.io/bdlnaredi/stasharr:latest</Repository>
+  <Registry>https://github.com/bdlnaredi/stasharr/pkgs/container/stasharr</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/bdlnaredi/stasharr/issues</Support>
+  <Project>https://github.com/bdlnaredi/stasharr</Project>
+  <Overview>EARLY-STAGE SOFTWARE: This app is new and may be broken. Updates are frequent and may include breaking changes. Back up your data before installing or updating. Provided "as is" with no warranty; the author accepts no liability for data loss or damage. Use at your own risk. 
+    Stasharr is a fork of Stash with multi-user logins (roles and tiers with library access), per-user history and ratings, automatic scan and identify of new files (ThePornDB, StashDB and other stash-boxes), and automatic 15 second vertical reels.</Overview>
+  <Category>MediaApp:Video MediaServer:Video</Category>
+  <WebUI>http://[IP]:[PORT:2704]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/stasharr/main/ui/v2.5/public/favicon.png</Icon>
+  <Config Name="Web UI port" Target="2704" Default="2704" Mode="tcp" Type="Port" Display="always" Required="true" Mask="false">2704</Config>
+  <Config Name="Config" Target="/root/.stash" Default="/mnt/user/appdata/stasharr/config" Mode="rw" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/stasharr/config</Config>
+  <Config Name="Library" Target="/data" Default="/mnt/user/media/stash" Mode="rw" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media/stash</Config>
+  <Config Name="Metadata" Target="/metadata" Default="/mnt/user/appdata/stasharr/metadata" Mode="rw" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/stasharr/metadata</Config>
+  <Config Name="Cache" Target="/cache" Default="/mnt/user/appdata/stasharr/cache" Mode="rw" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/stasharr/cache</Config>
+  <Config Name="Blobs" Target="/blobs" Default="/mnt/user/appdata/stasharr/blobs" Mode="rw" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/stasharr/blobs</Config>
+  <Config Name="Generated" Target="/generated" Default="/mnt/user/appdata/stasharr/generated" Mode="rw" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/stasharr/generated</Config>
+  <Config Name="STASH_STASH" Target="STASH_STASH" Default="/data/" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">/data/</Config>
+  <Config Name="STASH_GENERATED" Target="STASH_GENERATED" Default="/generated/" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">/generated/</Config>
+  <Config Name="STASH_METADATA" Target="STASH_METADATA" Default="/metadata/" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">/metadata/</Config>
+  <Config Name="STASH_CACHE" Target="STASH_CACHE" Default="/cache/" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">/cache/</Config>
+  <Config Name="STASH_PORT" Target="STASH_PORT" Default="2704" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">2704</Config>
+  <Config Name="TZ" Target="TZ" Default="Asia/Kolkata" Mode="" Type="Variable" Display="advanced" Required="false" Mask="false">Asia/Kolkata</Config>
+</Container>
