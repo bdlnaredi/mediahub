@@ -32,6 +32,14 @@ android {
         }
     }
 
+    // The manifest isn't named .xml so that Unraid's Community Apps scan (which reads every .xml file in this
+    // repository as a container template) leaves it alone
+    sourceSets {
+        main {
+            manifest.srcFile 'src/main/AndroidManifest.android'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
