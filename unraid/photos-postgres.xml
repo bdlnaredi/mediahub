@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Photos-Postgres</Name>
+  <Repository>ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0</Repository>
+  <Registry>https://github.com/immich-app/base-images/pkgs/container/postgres</Registry>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Project>https://github.com/bdlnaredi/photos</Project>
+  <Support>https://github.com/bdlnaredi/photos/issues</Support>
+  <Overview>Database for Photos. Install this before the Photos container. Keep the data folder on your cache SSD, not a network share, and back it up: it holds your albums, faces and comments.</Overview>
+  <Category>Tools:Utilities</Category>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/bdlnaredi/mediahub/main/unraid/photos-postgres.xml</TemplateURL>
+  <ReadMe>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/README.md</ReadMe>
+  <ExtraSearchTerms>photos immich google photos backup gallery</ExtraSearchTerms>
+  <License>AGPL-3.0</License>
+  <Date>2026-11-09</Date>
+  <Changes>Initial release</Changes>
+  <ExtraParams>--shm-size=128m</ExtraParams>
+  <Config Name="Database port" Target="5432" Default="5433" Mode="tcp" Description="Host port. Photos connects to this." Type="Port" Display="always" Required="true" Mask="false">5433</Config>
+  <Config Name="Database data" Target="/var/lib/postgresql/data" Default="/mnt/user/appdata/photos/postgres" Mode="rw" Description="Database files. Use a cache or SSD share." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/photos/postgres</Config>
+  <Config Name="Database password" Target="POSTGRES_PASSWORD" Default="" Mode="" Description="Choose a password. Letters and numbers only. Use the same one in Photos." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Database user" Target="POSTGRES_USER" Default="postgres" Mode="" Description="Database user." Type="Variable" Display="advanced" Required="true" Mask="false">postgres</Config>
+  <Config Name="Database name" Target="POSTGRES_DB" Default="immich" Mode="" Description="Database name." Type="Variable" Display="advanced" Required="true" Mask="false">immich</Config>
+  <Config Name="Init args" Target="POSTGRES_INITDB_ARGS" Default="--data-checksums" Mode="" Description="Used when the database is first created." Type="Variable" Display="advanced" Required="true" Mask="false">--data-checksums</Config>
+</Container>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Photos-Redis</Name>
+  <Repository>docker.io/valkey/valkey:9</Repository>
+  <Registry>https://hub.docker.com/r/valkey/valkey</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Project>https://github.com/bdlnaredi/photos</Project>
+  <Support>https://github.com/bdlnaredi/photos/issues</Support>
+  <Overview>Job queue for Photos. Install this before the Photos container.</Overview>
+  <Category>Tools:Utilities</Category>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/bdlnaredi/mediahub/main/unraid/photos-redis.xml</TemplateURL>
+  <ReadMe>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/README.md</ReadMe>
+  <ExtraSearchTerms>photos immich google photos backup gallery</ExtraSearchTerms>
+  <License>AGPL-3.0</License>
+  <Date>2026-11-09</Date>
+  <Changes>Initial release</Changes>
+  <Config Name="Redis port" Target="6379" Default="6380" Mode="tcp" Description="Host port. Photos connects to this." Type="Port" Display="always" Required="true" Mask="false">6380</Config>
+</Container>

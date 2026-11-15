@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Photos-ML</Name>
+  <Repository>ghcr.io/immich-app/immich-machine-learning:v3.3.5</Repository>
+  <Registry>https://github.com/immich-app/immich/pkgs/container/immich-machine-learning</Registry>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Project>https://github.com/bdlnaredi/photos</Project>
+  <Support>https://github.com/bdlnaredi/photos/issues</Support>
+  <Overview>Machine learning for Photos: face recognition and smart search. Install this before the Photos container. The first scan downloads models and can take a while.</Overview>
+  <Category>Tools:Utilities</Category>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/bdlnaredi/mediahub/main/unraid/photos-ml.xml</TemplateURL>
+  <ReadMe>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/README.md</ReadMe>
+  <ExtraSearchTerms>photos immich google photos backup gallery</ExtraSearchTerms>
+  <License>AGPL-3.0</License>
+  <Date>2026-11-09</Date>
+  <Changes>Initial release</Changes>
+  <Config Name="ML port" Target="3003" Default="3004" Mode="tcp" Description="Host port. Photos connects to this." Type="Port" Display="always" Required="true" Mask="false">3004</Config>
+  <Config Name="Model cache" Target="/cache" Default="/mnt/user/appdata/photos/model-cache" Mode="rw" Description="Downloaded AI models." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/photos/model-cache</Config>
+</Container>

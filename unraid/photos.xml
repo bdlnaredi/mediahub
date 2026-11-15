@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Photos</Name>
+  <Repository>ghcr.io/bdlnaredi/photos-server:latest</Repository>
+  <Registry>https://github.com/bdlnaredi/photos/pkgs/container/photos-server</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Project>https://github.com/bdlnaredi/photos</Project>
+  <Support>https://github.com/bdlnaredi/photos/issues</Support>
+  <Overview>Self-hosted Google Photos alternative built on Immich, with automatic phone backup, face recognition, smart search, albums, a WhatsApp-style family feed and full Hindi translation. This is the main web app and server. It needs the Photos-Postgres, Photos-Redis and Photos-ML containers from this repository.</Overview>
+  <Category>MediaApp:Photos Backup:</Category>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/bdlnaredi/mediahub/main/unraid/photos.xml</TemplateURL>
+  <ReadMe>https://raw.githubusercontent.com/bdlnaredi/photos/main/unraid/README.md</ReadMe>
+  <ExtraSearchTerms>photos immich google photos backup gallery</ExtraSearchTerms>
+  <License>AGPL-3.0</License>
+  <Date>2026-11-09</Date>
+  <Changes>Initial release</Changes>
+  <WebUI>http://[IP]:[PORT:2283]</WebUI>
+  <Requires>Install Photos-Postgres, Photos-Redis and Photos-ML first. See the README for the full setup.</Requires>
+  <Config Name="Web UI port" Target="2283" Default="2283" Mode="tcp" Description="Port for the web app and the Android app." Type="Port" Display="always" Required="true" Mask="false">2283</Config>
+  <Config Name="Photo library" Target="/data" Default="/mnt/user/photos" Mode="rw" Description="Where uploaded photos and videos are stored." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/photos</Config>
+  <Config Name="Database host" Target="DB_HOSTNAME" Default="" Mode="" Description="IP address of your Unraid server, where Photos-Postgres runs." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Database port" Target="DB_PORT" Default="5433" Mode="" Description="Host port of Photos-Postgres." Type="Variable" Display="always" Required="true" Mask="false">5433</Config>
+  <Config Name="Database user" Target="DB_USERNAME" Default="postgres" Mode="" Description="Must match Photos-Postgres." Type="Variable" Display="advanced" Required="true" Mask="false">postgres</Config>
+  <Config Name="Database password" Target="DB_PASSWORD" Default="" Mode="" Description="Must match Photos-Postgres. Letters and numbers only." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Database name" Target="DB_DATABASE_NAME" Default="immich" Mode="" Description="Must match Photos-Postgres." Type="Variable" Display="advanced" Required="true" Mask="false">immich</Config>
+  <Config Name="Redis host" Target="REDIS_HOSTNAME" Default="" Mode="" Description="IP address of your Unraid server, where Photos-Redis runs." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Redis port" Target="REDIS_PORT" Default="6380" Mode="" Description="Host port of Photos-Redis." Type="Variable" Display="always" Required="true" Mask="false">6380</Config>
+  <Config Name="Machine learning URL" Target="IMMICH_MACHINE_LEARNING_URL" Default="http://YOUR-UNRAID-IP:3004" Mode="" Description="Address of Photos-ML. Replace YOUR-UNRAID-IP with your server IP." Type="Variable" Display="always" Required="true" Mask="false">http://YOUR-UNRAID-IP:3004</Config>
+  <Config Name="Timezone" Target="TZ" Default="Asia/Kolkata" Mode="" Description="Your timezone." Type="Variable" Display="advanced" Required="false" Mask="false">Asia/Kolkata</Config>
+</Container>
