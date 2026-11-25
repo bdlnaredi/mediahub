@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Sasta</Name>
+  <Repository>ghcr.io/bdlnaredi/sasta:latest</Repository>
+  <Registry>https://github.com/bdlnaredi/sasta/pkgs/container/sasta</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/bdlnaredi/sasta/issues</Support>
+  <Project>https://github.com/bdlnaredi/sasta</Project>
+  <ReadMe>https://github.com/bdlnaredi/sasta#readme</ReadMe>
+  <Overview>Sasta: a self-hosted deal finder for Indian shopping sites. It hunts Amazon, Flipkart, Myntra, Ajio, Meesho, Croma, Reliance Digital, Tata CLiQ, JioMart, BigBasket, Blinkit, Zepto (and any shop you add) round the clock for deals of 40% off and better, reads deal-community feeds, tracks prices to spot fake discounts, compares one product across shops, watches products you paste, and alerts you on Telegram or ntfy. Open the Web UI and choose a password on first start.</Overview>
+  <Category>Tools: Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8787]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/bdlnaredi/sasta/main/app/static/icon-512.png</Icon>
+  <Config Name="Web UI port" Target="8787" Default="8787" Mode="tcp" Description="Port for the Sasta web app" Type="Port" Display="always" Required="true" Mask="false">8787</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/sasta" Mode="rw" Description="Where Sasta keeps its deals, price history and settings" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/sasta</Config>
+  <Config Name="Time zone" Target="TZ" Default="Asia/Kolkata" Mode="" Description="Time zone" Type="Variable" Display="advanced" Required="false" Mask="false">Asia/Kolkata</Config>
+</Container>
